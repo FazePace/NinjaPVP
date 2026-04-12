@@ -1,0 +1,18 @@
+# System
+.DS_Store
+Thumbs.db
+*.log
+
+# Dependencies
+node_modules/
+.netlify/
+
+# Tooling
+.claw/
+.gemini/
+
+# Backup files
+*.bak
+*.tmp
+players.js.bak
+players.json.bak
