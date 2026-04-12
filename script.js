@@ -36,8 +36,8 @@ const translations = {
     }
 };
 
-let currentLang = 'es';
-const t = (key) => translations[currentLang][key] || key;
+let currentLang = 'en'; // Default to EN as per HTML
+const t = (key) => (translations[currentLang] && translations[currentLang][key]) || key;
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -73,7 +73,6 @@ function getOverallELO(player) {
     if (!player.rankings) return player.points || 0;
     const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
     const sum = modes.reduce((acc, mode) => acc + (player.rankings[mode] || 0), 0);
-    // Usamos el máximo para asegurar que el Overall no sea inferior a una categoría específica
     return Math.max(player.points || 0, sum);
 }
 
@@ -84,6 +83,7 @@ function getEloByMode(player, mode) {
 
 function getRank(mode, elo, targetPlayer) {
     if (playersData.length === 0) return 0;
+    // Cache sorted ranking for the mode to avoid O(N log N) per row
     const sorted = [...playersData].sort((a, b) => {
         const bElo = getEloByMode(b, mode);
         const aElo = getEloByMode(a, mode);
@@ -105,7 +105,7 @@ function getSkinUrl(player) {
 
 // --- UI RENDERING ---
 function renderRanking() {
-    const tbody = document.getElementById('leaderboard-body');
+    const tbody = document.getElementById('ranking-body'); // FIXED ID
     if (!tbody) return;
 
     if (playersData.length === 0) {
@@ -115,7 +115,7 @@ function renderRanking() {
 
     let filtered = playersData.filter(p => p.username.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    // Sort logic
+    // Sort logic for current table view
     filtered.sort((a, b) => {
         const bElo = getEloByMode(b, currentMode);
         const aElo = getEloByMode(a, currentMode);
@@ -130,9 +130,9 @@ function renderRanking() {
         row.className = 'leaderboard-row';
         
         const elo = getEloByMode(player, currentMode);
-        const rank = index + 1;
+        const rank = getRank(currentMode, elo, player);
         
-        let rankHtml = `<span class="rank-number">#${rank}</span>`;
+        let rankHtml = `<span class="rank-standard">#${rank}</span>`;
         if (rank === 1) rankHtml = `<img class="rank-banner" src="./assets/rank1.png" alt="#1">`;
         else if (rank === 2) rankHtml = `<img class="rank-banner" src="./assets/rank2.png" alt="#2">`;
         else if (rank === 3) rankHtml = `<img class="rank-banner" src="./assets/rank3.png" alt="#3">`;
@@ -147,9 +147,9 @@ function renderRanking() {
             
             return `
                 <div class="modality-group ${isActive ? 'active' : ''}" data-modality="${m}">
-                    <div class="modality-circle"><img class="modality-icon" src="./assets/${icon}" alt="${m}"></div>
+                    <div class="modality-circle" style="--modality-glow: var(--modality-glow-${m})"><img class="modality-icon" src="./assets/${icon}" alt="${m}"></div>
                     <div class="modality-badge">
-                        <span class="modality-rank ${mRank <= 1 ? 'top-1' : mRank <= 3 ? 'top-3' : mRank <= 5 ? 'top-5' : ''}">#${mRank}</span>
+                        <span class="modality-rank ${mRank <= 1 ? 'top-1' : mRank <= 2 ? 'top-2' : mRank <= 3 ? 'top-3' : ''}">#${mRank}</span>
                     </div>
                 </div>
             `;
@@ -158,11 +158,11 @@ function renderRanking() {
         row.innerHTML = `
             <td class="col-rank">${rankHtml}</td>
             <td class="col-player clickable-row">
-                <div class="player-info">
+                <div class="player-info" style="left: 0;"> <!-- Fixed positioning bug -->
                     <div class="player-skin"><img src="${getSkinUrl(player)}" alt="${player.username}"></div>
                     <div class="player-details">
                         <span class="player-name">${player.username}</span>
-                        <span class="player-elo-info"><span class="player-elo-highlight">ELO ${elo.toLocaleString()}</span> &nbsp;•&nbsp; Global Rank #${rank}</span>
+                        <span class="player-elo-info"><span class="player-elo-highlight">ELO ${elo.toLocaleString()}</span> &nbsp;•&nbsp; Global Rank #${getRank('overall', getOverallELO(player), player)}</span>
                     </div>
                 </div>
             </td>
@@ -175,38 +175,37 @@ function renderRanking() {
 }
 
 function updateStats() {
-    if (!playersData || playersData.length === 0) {
-        document.getElementById('stat-top-player').textContent = "-";
-        document.getElementById('stat-active-players').textContent = "0";
-        document.getElementById('stat-matches').textContent = "0";
-        document.getElementById('stat-avg-elo').textContent = "0";
-        return;
-    }
+    if (!playersData || playersData.length === 0) return;
 
     const topPlayer = [...playersData].sort((a, b) => getOverallELO(b) - getOverallELO(a))[0];
-    document.getElementById('stat-top-player').textContent = topPlayer.username;
-    document.getElementById('stat-active-players').textContent = playersData.length;
+    const topPlayerEl = document.getElementById('stat-top-player');
+    if (topPlayerEl) topPlayerEl.textContent = topPlayer.username;
+    
+    const activePlayersEl = document.getElementById('stat-active-players');
+    if (activePlayersEl) activePlayersEl.textContent = playersData.length;
 
     // Matches calc
-    let totalW = 0, totalL = 0;
+    let totalW = 0;
     playersData.forEach(p => {
-        totalW += (p.wins || 0);
-        totalL += (p.losses || 0);
         if (p.rankings) {
             const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
             modes.forEach(m => {
                 totalW += (p.rankings[`${m}_w`] || 0);
-                totalL += (p.rankings[`${m}_l`] || 0);
             });
+        } else {
+            totalW += (p.wins || 0);
         }
     });
     
+    const matchesEl = document.getElementById('stat-matches');
+    if (matchesEl) {
+        matchesEl.textContent = totalW >= 1000 ? (totalW/1000).toFixed(1) + 'k' : totalW;
+    }
+
     // Average ELO
     const avgElo = Math.floor(playersData.reduce((acc, p) => acc + getOverallELO(p), 0) / playersData.length);
-    document.getElementById('stat-avg-elo').textContent = avgElo;
-
-    const matches = Math.floor((totalW + totalL) / 2);
-    document.getElementById('stat-matches').textContent = matches >= 1000 ? (matches/1000).toFixed(1) + 'k' : matches;
+    const avgEloEl = document.getElementById('stat-avg-elo');
+    if (avgEloEl) avgEloEl.textContent = avgElo;
 }
 
 // --- PLAYER PROFILE MODAL ---
@@ -215,10 +214,17 @@ function showPlayerProfile(player) {
     if (!modal) return;
 
     // Header Info
-    document.getElementById('modal-skin').src = getSkinUrl(player).replace('/body/', '/avatar/');
-    document.getElementById('modal-username').textContent = player.username.toUpperCase();
-    document.getElementById('modal-elo').textContent = `ELO: ${getOverallELO(player)}`;
-    document.getElementById('modal-rank').textContent = `Global Rank: #${getRank('overall', getOverallELO(player), player)}`;
+    const modalSkin = document.getElementById('modal-player-skin');
+    if (modalSkin) modalSkin.src = getSkinUrl(player).replace('/body/', '/avatar/');
+    
+    const modalName = document.getElementById('modal-player-name');
+    if (modalName) modalName.textContent = player.username.toUpperCase();
+    
+    const modalElo = document.getElementById('modal-player-elo');
+    if (modalElo) modalElo.textContent = `ELO: ${getOverallELO(player)}`;
+    
+    const modalRank = document.getElementById('modal-player-global-rank');
+    if (modalRank) modalRank.textContent = `Global Rank: #${getRank('overall', getOverallELO(player), player)}`;
 
     // Top Stats Calculation
     let totalW = 0, totalL = 0;
@@ -235,42 +241,54 @@ function showPlayerProfile(player) {
         let icon = m === 'pot' ? 'potion.png' : m === 'smp' ? 'smp.png' : `${m}.png`;
 
         modalStatsHtml += `
-            <div class="modality-card">
-                <div class="modality-header">
-                    <span class="modality-title">${m.toUpperCase()}</span>
-                    <img src="./assets/${icon}" class="modality-symbol">
+            <div class="modality-stat-card">
+                <div class="modality-stat-header">
+                    <span class="modality-stat-name">${m}</span>
+                    <img src="./assets/${icon}" class="modality-stat-icon">
                 </div>
-                <div class="modality-body">
-                    <div class="modality-elo-value">${elo} ELO</div>
-                    <div class="modality-winrate-value ${winrate >= 50 ? 'high' : 'low'}">${winrate}% Winrate</div>
-                    <div class="mini-stat"><span>${w}</span> <label>WINS</label></div>
-                    <div class="mini-stat"><span>${l}</span> <label>LOSSES</label></div>
+                <div class="modality-stat-elo">${elo} ELO</div>
+                <div class="modality-stat-winrate" style="color: ${winrate >= 50 ? '#4ade80' : '#f87171'}">${winrate}% Winrate</div>
+                <div class="modality-stat-details">
+                    <div class="modality-stat-detail">
+                        <div class="modality-stat-value-small">${w}</div>
+                        <div class="modality-stat-label-small">WINS</div>
+                    </div>
+                    <div class="modality-stat-detail">
+                        <div class="modality-stat-value-small">${l}</div>
+                        <div class="modality-stat-label-small">LOSSES</div>
+                    </div>
                 </div>
             </div>
         `;
     });
 
     // Update Modal Totals
-    document.getElementById('modal-total-wins').textContent = totalW || player.wins || 0;
-    document.getElementById('modal-total-losses').textContent = totalL || player.losses || 0;
-    document.getElementById('modal-total-winrate').textContent = getWinrate(totalW || player.wins || 0, totalL || player.losses || 0) + '%';
-    document.getElementById('modal-total-games').textContent = (totalW || player.wins || 0) + (totalL || player.losses || 0);
-    document.getElementById('modalities-grid').innerHTML = modalStatsHtml;
+    const totalWinsEl = document.getElementById('modal-total-wins');
+    if (totalWinsEl) totalWinsEl.textContent = totalW || player.wins || 0;
+    
+    const totalLossesEl = document.getElementById('modal-total-losses');
+    if (totalLossesEl) totalLossesEl.textContent = totalL || player.losses || 0;
+    
+    const totalWinrateEl = document.getElementById('modal-total-winrate');
+    if (totalWinrateEl) totalWinrateEl.textContent = getWinrate(totalW || player.wins || 0, totalL || player.losses || 0) + '%';
+    
+    const totalGamesEl = document.getElementById('modal-total-games');
+    if (totalGamesEl) totalGamesEl.textContent = (totalW || player.wins || 0) + (totalL || player.losses || 0);
+    
+    const modalitiesGrid = document.getElementById('modal-modality-grid');
+    if (modalitiesGrid) modalitiesGrid.innerHTML = modalStatsHtml;
 
     modal.classList.add('active');
-    
-    window.onclick = (e) => {
-        if (e.target === modal) closeModal();
-    };
 }
 
-function closeModal() {
-    document.getElementById('player-modal').classList.remove('active');
+function closePlayerModal() {
+    const modal = document.getElementById('player-modal');
+    if (modal) modal.classList.remove('active');
 }
 
 // --- UTILS & HANDLERS ---
 function initSearch() {
-    const searchInput = document.getElementById('player-search');
+    const searchInput = document.getElementById('search-input'); // FIXED ID
     if (!searchInput) return;
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
@@ -279,7 +297,7 @@ function initSearch() {
 }
 
 function initModeFilters() {
-    const filters = document.querySelectorAll('.mode-filter');
+    const filters = document.querySelectorAll('.tab-btn'); // FIXED SELECTOR
     filters.forEach(filter => {
         filter.addEventListener('click', () => {
             filters.forEach(f => f.classList.remove('active'));
@@ -298,11 +316,42 @@ function createAnimatedTitle() {
     titleText.split('').forEach((letter, index) => {
         const span = document.createElement('span');
         span.textContent = letter;
+        span.className = 'title-letter'; // ADDED CLASS FOR CSS ANIMATION
         span.style.animationDelay = `${index * 0.1}s`;
         titleElement.appendChild(span);
     });
 }
 
 function initLanguage() {
-    // Placeholder para futuro sistema de idiomas dinámico
+    const langBtn = document.getElementById('lang-btn');
+    const langSelectorWrapper = document.getElementById('lang-selector-wrapper');
+    const langOptions = document.querySelectorAll('.lang-option');
+    const langCurrent = document.getElementById('lang-current');
+
+    if (langBtn && langSelectorWrapper) {
+        langBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            langSelectorWrapper.classList.toggle('open');
+        });
+    }
+
+    langOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            currentLang = option.getAttribute('data-value');
+            langOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+            if (langCurrent) langCurrent.textContent = currentLang.toUpperCase();
+            if (langSelectorWrapper) langSelectorWrapper.classList.remove('open');
+            // Re-render strings if necessary
+            renderRanking();
+        });
+    });
+
+    document.addEventListener('click', () => {
+        if (langSelectorWrapper) langSelectorWrapper.classList.remove('open');
+    });
+}
+
+function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
