@@ -133,11 +133,11 @@ function renderRanking() {
         const rank = getRank(currentMode, elo, player);
         
         let rankHtml = `<span class="rank-standard">#${rank}</span>`;
-        if (rank === 1) rankHtml = `<img class="rank-banner" src="./assets/rank1.png" alt="#1">`;
-        else if (rank === 2) rankHtml = `<img class="rank-banner" src="./assets/rank2.png" alt="#2">`;
-        else if (rank === 3) rankHtml = `<img class="rank-banner" src="./assets/rank3.png" alt="#3">`;
+        if (rank === 1) rankHtml = `<div class="rank-banner gold"><span class="rank-number">#1</span></div>`;
+        else if (rank === 2) rankHtml = `<div class="rank-banner silver"><span class="rank-number">#2</span></div>`;
+        else if (rank === 3) rankHtml = `<div class="rank-banner bronze"><span class="rank-number">#3</span></div>`;
 
-        // Modalities Column
+        row.className = `leaderboard-row ${rank <= 3 ? 'top-' + rank : ''}`;
         const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
         const modalitiesHtml = modes.map(m => {
             const mElo = player.rankings ? (player.rankings[m] || 0) : 0;
