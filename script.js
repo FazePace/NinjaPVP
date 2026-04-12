@@ -1,488 +1,347 @@
-const mcNames = [
-    "Technoblade", "Stonks-", "Trophy-", "clutch-", "V-", "Fruitberries", "luz-", "Dodge-", "P-", "BOZ-", "Sapnap",
-    "Dream", "GeorgeNotFound", "Sapnap", "Quig", "Illumina", "Krtzyy", "PunZ", "TapL", "Purpled", "Hannahxxrose",
-    "Wallibear", "Nestor", "Calvin", "Xulu", "Renzoh", "Luvic", "Speardish", "Melted", "Frosty", "Ignite",
-    "Shadow", "Lunar", "Solar", "Nova", "Cosmos", "Void", "Ether", "Flux", "Nexus", "Prism",
-    "Stealth", "Hunter", "Warrior", "Knight", "Rogue", "Mage", "Archer", "Slayer", "Titan", "Colossus",
-    "Rampage", "Havoc", "Chaos", "Zenith", "Apex", "Summit", "Peak", "Vertigo", "Zephyr", "Gale",
-    "Breeze", "Storm", "Thunder", "Bolt", "Shock", "Spark", "Ember", "Ash", "Dust", "Mist",
-    "Gloom", "Abyss", "Dread", "Fear", "Panic", "Rage", "Fury", "Wrath", "Malice", "Bane",
-    "Scourge", "Plague", "Venom", "Toxic", "Acid", "Blight", "Corruption", "Decay", "Bones", "Spirit",
-    "Ghost", "Phantom", "Wraith", "Specter", "Shade", "Echo", "Whisper", "Murmur", "Silence", "Drift"
-];
-
-function generate100Players() {
-    const data = [];
-    const usedNames = new Set();
-    const primary = ["Technoblade", "Stonks-", "Trophy-", "clutch-", "V-", "Fruitberries"];
-    
-    primary.forEach(name => {
-        data.push({
-            username: name,
-            sword: 2000 + Math.floor(Math.random() * 150),
-            pot: 2000 + Math.floor(Math.random() * 150),
-            axe: 2000 + Math.floor(Math.random() * 150),
-            overall: 2000 + Math.floor(Math.random() * 150),
-            change: Math.floor(Math.random() * 30) - 15,
-            uuid: crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 10) + "-uuid")
-        });
-        usedNames.add(name);
-    });
-
-    while (data.length < 100) {
-        const nameIdx = Math.floor(Math.random() * mcNames.length);
-        const name = mcNames[nameIdx] + (Math.random() > 0.7 ? Math.floor(Math.random() * 100) : "");
-        if (!usedNames.has(name)) {
-            data.push({
-                username: name,
-                sword: 1500 + Math.floor(Math.random() * 600),
-                pot: 1500 + Math.floor(Math.random() * 600),
-                axe: 1500 + Math.floor(Math.random() * 600),
-                overall: 1500 + Math.floor(Math.random() * 600),
-                change: Math.floor(Math.random() * 20) - 10,
-                uuid: crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).substring(2, 10) + "-uuid")
-            });
-            usedNames.add(name);
-        }
-    }
-    return data;
-}
-
+// NinjaPVP Ranking Engine v2.0 - Consolidated & Fixed
 let playersData = [];
+let currentMode = 'overall';
+let searchQuery = '';
+let currentLang = 'en';
 
-async function loadPlayerData() {
-    try {
-        // Añadimos un timestamp para evitar que el navegador cargue una versión vieja (Cache Busting)
-        const response = await fetch('assets/players.json?t=' + Date.now());
-        const data = await response.json();
-        
-        if (data && data.length > 0) {
-            playersData = data.map(p => ({
-                ...p,
-                username: p.username,
-                sword: (p.rankings && p.rankings.sword) || 0,
-                pot: (p.rankings && p.rankings.pot) || 0,
-                axe: (p.rankings && p.rankings.axe) || 0,
-                mace: (p.rankings && p.rankings.mace) || 0,
-                netherop: (p.rankings && p.rankings.netherop) || 0,
-                smp: (p.rankings && p.rankings.smp) || 0,
-                uhc: (p.rankings && p.rankings.uhc) || 0,
-                vanilla: (p.rankings && p.rankings.vanilla) || 0,
-                crystal: (p.rankings && p.rankings.crystal) || 0,
-                overall: p.points || 0,
-                change: 0,
-                uuid: p.uuid
-            }));
-        } else {
-            playersData = generate100Players();
-        }
-        
-        renderLeaderboard();
-        initCounters();
-    } catch (error) {
-        console.error("Error loading player data:", error);
-        // Fallback a generación aleatoria si no hay archivo
-        playersData = generate100Players();
-        renderLeaderboard();
-    }
-}
-
-// Inicialización
-document.addEventListener('DOMContentLoaded', () => {
-    loadPlayerData();
-    
-    // Polling cada 60 segundos (GitHub Pages tarda un poco en actualizar)
-    setInterval(loadPlayerData, 60000);
-});
-
-const i18n = {
+// Translations
+const translations = {
     en: {
-        page_title: "FLOWTIERS – THE TRUE COMPETITIVE RANKING",
-        nav_rankings: "RANKINGS",
-        nav_history: "HISTORY",
-        nav_discord: "DISCORD",
-        search_placeholder: "Search player...",
-        hero_title: "FLOWTIERS – THE TRUE <span class='text-gradient'>COMPETITIVE</span> <br> RANKING SYSTEM",
-        hero_subtitle: "Real-time ELO, updated rankings, dominate every modality.",
-        btn_view_rankings: "VIEW RANKINGS",
-        btn_search_player: "SEARCH PLAYER",
-        label_ranked_players: "RANKED PLAYERS",
-        label_matches: "MATCHES REGISTERED",
-        label_top_global: "CURRENT TOP GLOBAL",
-        leaderboard_title: "LEADERBOARD",
-        tab_overall: "Overall",
-        tab_sword: "Sword",
-        tab_pot: "Pot",
-        tab_axe: "Axe",
-        header_rank: "RANK",
-        header_player: "PLAYER",
-        header_modality_stats: "MODALITY STATISTICS",
-        label_global_rank: "Global Rank",
-        label_overall_elo: "OVERALL ELO",
-        label_winrate: "Winrate",
-        label_matches_played: "Matches",
-        footer_text: "&copy; 2026 FLOWTIERS. Inspired by the competitive spirit.",
-        tab_sword_label: "SWORD",
-        tab_pot_label: "POT",
-        tab_axe_label: "AXE"
+        subtitle: "The most competitive PvP server, featuring a fully custom and exclusive ELO ranking system.",
+        searchPlaceholder: "Search player...",
+        pos: "POS",
+        player: "PLAYER",
+        modalities: "MODALITIES",
+        topPlayer: "Top Player",
+        activePlayers: "Active Players",
+        totalMatches: "Total Matches",
+        avgElo: "Average ELO",
+        currentlyOnline: "Currently online",
+        allTime: "All time"
     },
     es: {
-        page_title: "FLOWTIERS – EL VERDADERO RANKING COMPETITIVO",
-        nav_rankings: "RANKINGS",
-        nav_history: "HISTORIAL",
-        nav_discord: "DISCORD",
-        search_placeholder: "Buscar jugador...",
-        hero_title: "FLOWTIERS – EL VERDADERO <span class='text-gradient'>RANKING</span> <br> COMPETITIVO",
-        hero_subtitle: "ELO real, rankings actualizados, domina cada modalidad.",
-        btn_view_rankings: "VER RANKINGS",
-        btn_search_player: "BUSCAR JUGADOR",
-        label_ranked_players: "JUGADORES RANKEADOS",
-        label_matches: "PARTIDAS REGISTRADAS",
-        label_top_global: "ACTUAL TOP GLOBAL",
-        leaderboard_title: "TABLA DE POSICIONES",
-        tab_overall: "General",
-        tab_sword: "Espada",
-        tab_pot: "Pot",
-        tab_axe: "Hacha",
-        header_rank: "POS",
-        header_player: "JUGADOR",
-        header_modality_stats: "ESTADÍSTICAS POR MODALIDAD",
-        label_global_rank: "Rango Global",
-        label_overall_elo: "ELO GENERAL",
-        label_winrate: "Winrate",
-        label_matches_played: "Partidas",
-        footer_text: "&copy; 2026 FLOWTIERS. Inspirado por el espíritu competitivo.",
-        tab_sword_label: "ESPADA",
-        tab_pot_label: "POT",
-        tab_axe_label: "HACHA"
+        subtitle: "El servidor de PvP más competitivo, con un sistema de ranking ELO personalizado y exclusivo.",
+        searchPlaceholder: "Buscar jugador...",
+        pos: "POS",
+        player: "JUGADOR",
+        modalities: "MODALIDADES",
+        topPlayer: "Top Jugador",
+        activePlayers: "Jugadores Activos",
+        totalMatches: "Partidas Totales",
+        avgElo: "ELO Promedio",
+        currentlyOnline: "Actualmente online",
+        allTime: "Total"
     }
 };
 
-let currentLang = 'en';
-let currentMode = 'overall';
-let currentFilter = '';
-let ongoingFights = [];
+// --- DATA LOADING ---
+async function loadPlayerData() {
+    try {
+        console.log("Fetching player data...");
+        // Cache busting con timestamp para evitar versiones viejas de GitHub
+        const response = await fetch('assets/players.json?t=' + Date.now());
+        if (!response.ok) throw new Error("File not found");
+        const data = await response.json();
+        
+        // El formato del JSON que genera el plugin es una lista directa de jugadores
+        if (data && data.length > 0) {
+            playersData = data;
+        } else {
+            console.warn("Empty data received, using fallback.");
+            playersData = [];
+        }
+        
+        renderRanking();
+        updateStats();
+    } catch (error) {
+        console.error("Error loading player data:", error);
+        playersData = []; 
+        renderRanking();
+    }
+}
 
+// --- CORE LOGIC ---
+function getOverallELO(player) {
+    if (typeof player.points === 'number') return player.points;
+    if (!player.rankings) return 0;
+    // Suma de las modalidades principales
+    const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
+    return modes.reduce((acc, mode) => acc + (player.rankings[mode] || 0), 0);
+}
+
+function getPlayerELO(player) {
+    if (currentMode === 'overall') return getOverallELO(player);
+    return player.rankings ? (player.rankings[currentMode] || 0) : 0;
+}
+
+function getRank(mode, elo) {
+    if (playersData.length === 0) return 0;
+    const sorted = [...playersData].sort((a, b) => {
+        const aElo = mode === 'overall' ? getOverallELO(a) : (a.rankings ? a.rankings[mode] || 0 : 0);
+        const bElo = mode === 'overall' ? getOverallELO(b) : (b.rankings ? b.rankings[mode] || 0 : 0);
+        return bElo - aElo;
+    });
+    return sorted.findIndex(p => {
+        const pElo = mode === 'overall' ? getOverallELO(p) : (p.rankings ? p.rankings[mode] || 0 : 0);
+        return pElo === elo;
+    }) + 1;
+}
+
+function getWinrate(wins, losses) {
+    if (wins + losses === 0) return 0;
+    return ((wins / (wins + losses)) * 100).toFixed(1);
+}
+
+function getSkinUrl(player) {
+    const identifier = player.username || 'Steve';
+    return `https://mc-heads.net/body/${identifier}`;
+}
+
+// --- UI RENDERING ---
+function createAnimatedTitle() {
+    const titleElement = document.getElementById('title');
+    if (!titleElement) return;
+    const titleText = 'NinjaPVP';
+    titleElement.innerHTML = '';
+
+    titleText.split('').forEach((letter, index) => {
+        const span = document.createElement('span');
+        span.className = 'title-letter';
+        span.textContent = letter === ' ' ? '\u00A0' : letter;
+        span.setAttribute('data-letter', letter);
+        span.style.animationDelay = `${index * 0.1}s`;
+        titleElement.appendChild(span);
+    });
+}
+
+function renderRanking() {
+    const tbody = document.getElementById('ranking-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (playersData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 50px; color: rgba(255,255,255,0.5);">No player data found. Syncing with server...</td></tr>';
+        return;
+    }
+
+    // Filter & Sort
+    let filtered = playersData.filter(p => p.username.toLowerCase().includes(searchQuery.toLowerCase()));
+    filtered.sort((a, b) => getPlayerELO(b) - getPlayerELO(a));
+
+    filtered.forEach((player, index) => {
+        const elo = getPlayerELO(player);
+        const isTop1 = index === 0 && searchQuery === '';
+        const isTop2 = index === 1 && searchQuery === '';
+        const isTop3 = index === 2 && searchQuery === '';
+
+        const row = document.createElement('tr');
+        row.className = 'ranking-row';
+        if (player.uuid) row.setAttribute('data-uuid', player.uuid);
+
+        // Rank Column
+        let rankHtml;
+        if (isTop1 || isTop2 || isTop3) {
+            const variant = isTop1 ? 'gold' : isTop2 ? 'silver' : 'bronze';
+            rankHtml = `<div class="rank-banner ${variant}"><span class="rank-number">${index + 1}</span></div>`;
+        } else {
+            rankHtml = `<span class="rank-standard">${index + 1}</span>`;
+        }
+
+        // Modalities Column
+        const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
+        const modalitiesHtml = modes.map(m => {
+            const mElo = player.rankings ? (player.rankings[m] || 0) : 0;
+            const mRank = getRank(m, mElo);
+            let icon = m === 'pot' ? 'potion.png' : m === 'smp' ? 'smp.png' : `${m}.png`;
+            
+            return `
+                <div class="modality-group" data-modality="${m}">
+                    <div class="modality-circle"><img class="modality-icon" src="./assets/${icon}" alt="${m}"></div>
+                    <div class="modality-badge">
+                        <span class="modality-rank ${mRank <= 1 ? 'top-1' : mRank <= 3 ? 'top-3' : mRank <= 5 ? 'top-5' : ''}">#${mRank}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        row.innerHTML = `
+            <td class="col-rank">${rankHtml}</td>
+            <td class="col-player clickable-row">
+                <div class="player-info">
+                    <div class="player-skin"><img src="${getSkinUrl(player)}" alt="${player.username}"></div>
+                    <div class="player-details">
+                        <span class="player-name">${player.username}</span>
+                        <span class="player-elo-info"><span class="player-elo-highlight">ELO ${elo.toLocaleString()}</span> &nbsp;•&nbsp; Global Rank #${index + 1}</span>
+                    </div>
+                </div>
+            </td>
+            <td class="col-modalities">${modalalitiesHtml}</td>
+        `;
+
+        row.addEventListener('click', () => showPlayerProfile(player));
+        tbody.appendChild(row);
+    });
+}
+
+function updateStats() {
+    if (playersData.length === 0) return;
+
+    // Top Player
+    const top = playersData.reduce((prev, curr) => getPlayerELO(curr) > getPlayerELO(prev) ? curr : prev);
+    document.getElementById('stat-top-player').textContent = top.username;
+    document.getElementById('stat-top-mode').textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+
+    // Active
+    document.getElementById('stat-active-players').textContent = playersData.length;
+
+    // Total Matches (Suma real de W + L / 2)
+    let totalW = 0, totalL = 0;
+    playersData.forEach(p => {
+        if (p.rankings) {
+            ['sword','pot','axe','mace','netherop','smp','uhc','vanilla'].forEach(m => {
+                totalW += (p.rankings[`${m}_w`] || 0);
+                totalL += (p.rankings[`${m}_l`] || 0);
+            });
+        }
+    });
+    const matches = Math.floor((totalW + totalL) / 2);
+    document.getElementById('stat-matches').textContent = matches >= 1000 ? (matches/1000).toFixed(1) + 'k' : matches;
+
+    // Avg ELO
+    const avg = Math.round(playersData.reduce((acc, p) => acc + getPlayerELO(p), 0) / playersData.length);
+    document.getElementById('stat-avg-elo').textContent = avg.toLocaleString();
+    document.getElementById('stat-avg-mode').textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+}
+
+// --- MODAL ---
+function showPlayerProfile(player) {
+    const modal = document.getElementById('player-modal');
+    if (!modal) return;
+
+    document.getElementById('modal-player-skin').src = getSkinUrl(player);
+    document.getElementById('modal-player-name').textContent = player.username;
+    
+    const overall = getOverallELO(player);
+    document.getElementById('modal-player-elo').textContent = `ELO: ${overall.toLocaleString()}`;
+    document.getElementById('modal-player-global-rank').textContent = `Global Rank: #${getRank('overall', overall)}`;
+
+    const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
+    let totalW = 0, totalL = 0;
+    
+    const grid = document.getElementById('modal-modality-grid');
+    grid.innerHTML = '';
+
+    modes.forEach(m => {
+        const elo = player.rankings ? (player.rankings[m] || 0) : 0;
+        const w = player.rankings ? (player.rankings[`${m}_w`] || 0) : 0;
+        const l = player.rankings ? (player.rankings[`${m}_l`] || 0) : 0;
+        totalW += w; totalL += l;
+
+        let icon = m === 'pot' ? 'potion.png' : m === 'smp' ? 'smp.png' : `${m}.png`;
+        const card = document.createElement('div');
+        card.className = 'modality-stat-card';
+        card.innerHTML = `
+            <div class="modality-stat-header">
+                <span class="modality-stat-name">${m.toUpperCase()}</span>
+                <img class="modality-stat-icon" src="./assets/${icon}" alt="${m}">
+            </div>
+            <div class="modality-stat-elo">${elo.toLocaleString()} ELO</div>
+            <div class="modality-stat-winrate">${getWinrate(w, l)}% Winrate</div>
+            <div class="modality-stat-details">
+                <div class="modality-stat-detail">
+                    <div class="modality-stat-value-small">${w}</div>
+                    <div class="modality-stat-label-small">Wins</div>
+                </div>
+                <div class="modality-stat-detail">
+                    <div class="modality-stat-value-small">${l}</div>
+                    <div class="modality-stat-label-small">Losses</div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+    document.getElementById('modal-total-wins').textContent = totalW;
+    document.getElementById('modal-total-losses').textContent = totalL;
+    document.getElementById('modal-total-games').textContent = totalW + totalL;
+    document.getElementById('modal-total-winrate').textContent = getWinrate(totalW, totalL) + '%';
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePlayerModal() {
+    const modal = document.getElementById('player-modal');
+    if (modal) modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    initCounters();
-    lucide.createIcons();
+    loadPlayerData();
+    createAnimatedTitle();
 
-    document.getElementById('player-search').addEventListener('input', (e) => {
-        currentFilter = e.target.value.toLowerCase();
-        renderLeaderboard();
-    });
+    // Event Listeners
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderRanking();
+        });
+    }
 
-    document.getElementById('lang-toggle').addEventListener('click', () => {
-        currentLang = currentLang === 'en' ? 'es' : 'en';
-        updateTranslations();
-    });
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            renderLeaderboard();
+            currentMode = btn.getAttribute('data-mode');
+            renderRanking();
+            updateStats();
         });
     });
 
-    window.addEventListener('mousemove', (e) => {
-        const bubble = document.getElementById('search-bubble');
-        if (bubble) {
-            bubble.style.left = e.clientX + 'px';
-            bubble.style.top = e.clientY + 'px';
-        }
+    const langBtn = document.getElementById('lang-btn');
+    const langWrapper = document.getElementById('lang-selector-wrapper');
+    if (langBtn) {
+        langBtn.addEventListener('click', () => langWrapper.classList.toggle('open'));
+    }
+
+    document.querySelectorAll('.lang-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            currentLang = opt.getAttribute('data-value');
+            document.getElementById('lang-current').textContent = currentLang.toUpperCase();
+            langWrapper.classList.remove('open');
+            updateTranslations();
+        });
     });
 
-    for (let i = 0; i < 4; i++) {
-        spawnNewFight();
-    }
-    
-    setInterval(spawnNewFight, 3000);
-    setInterval(processArenaTick, 1000);
+    // Modal behavior
+    window.addEventListener('scroll', () => {
+        const nav = document.getElementById('dynamic-island');
+        if (window.scrollY > 50) nav.classList.add('scrolled');
+        else nav.classList.remove('scrolled');
+    });
 
-    toggleView('arena');
+    // Auto-update every 60s
+    setInterval(loadPlayerData, 60000);
 });
 
-function spawnNewFight() {
-    if (ongoingFights.length >= 10) return;
-
-    const available = playersData.filter(p => !ongoingFights.some(f => f.p1.username === p.username || f.p2.username === p.username));
-    if (available.length < 2) return;
-
-    const p1 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
-    const p2 = available.splice(Math.floor(Math.random() * available.length), 1)[0];
-    const modes = ['sword', 'pot', 'axe'];
-    const mode = modes[Math.floor(Math.random() * modes.length)];
-
-    const fight = {
-        id: Math.random().toString(36).substring(2, 9),
-        p1: p1,
-        p2: p2,
-        p1Hp: 20,
-        p2Hp: 20,
-        mode: mode,
-        startTime: Date.now()
-    };
-
-    ongoingFights.push(fight);
-    renderArena();
-}
-
-function processArenaTick() {
-    ongoingFights.forEach(fight => {
-        const card = document.querySelector(`.fight-card[data-id="${fight.id}"]`);
-        if (!card) return;
-
-        if (Math.random() < 0.4) return; 
-
-        const target = Math.random() < 0.5 ? 1 : 2;
-        const isHeal = fight.mode === 'pot' && Math.random() < 0.15; 
-        const val = 2; 
-        
-        if (isHeal) {
-            if (target === 1 && fight.p1Hp < 20) fight.p1Hp = Math.min(20, fight.p1Hp + val);
-            else if (target === 2 && fight.p2Hp < 20) fight.p2Hp = Math.min(20, fight.p2Hp + val);
-            
-            const receiver = card.querySelector(`.fighter-${target}`);
-            receiver.classList.add('healing-pulse');
-            setTimeout(() => receiver.classList.remove('healing-pulse'), 600);
-        } else {
-            if (target === 1) fight.p1Hp -= val;
-            else fight.p2Hp -= val;
-
-            const victim = card.querySelector(`.fighter-${target}`);
-            victim.classList.add('taking-hit');
-            setTimeout(() => victim.classList.remove('taking-hit'), 400);
-        }
-
-        if (fight.p1Hp <= 0 || fight.p2Hp <= 0) {
-            const winner = fight.p1Hp > 0 ? fight.p1 : fight.p2;
-            const loser = fight.p1Hp > 0 ? fight.p2 : fight.p1;
-            
-            card.classList.add('exiting');
-            
-            setTimeout(() => {
-                ongoingFights = ongoingFights.filter(f => f.id !== fight.id);
-                card.remove();
-                if (ongoingFights.length === 0) {
-                    document.getElementById('arena-empty').style.display = 'block';
-                }
-            }, 600);
-        } else {
-            const h1 = card.querySelector('.fighter-1 .hp-container');
-            const h2 = card.querySelector('.fighter-2 .hp-container');
-            if (h1) h1.innerHTML = renderHearts(fight.p1Hp);
-            if (h2) h2.innerHTML = renderHearts(fight.p2Hp);
-        }
-    });
-}
-
-function renderArena() {
-    const grid = document.getElementById('arena-grid');
-    const empty = document.getElementById('arena-empty');
-    if (!grid) return;
-
-    if (ongoingFights.length > 0) empty.style.display = 'none';
-
-    ongoingFights.forEach(f => {
-        let card = document.querySelector(`.fight-card[data-id="${f.id}"]`);
-        if (!card) {
-            card = document.createElement('div');
-            card.className = 'fight-card';
-            card.setAttribute('data-id', f.id);
-            card.innerHTML = `
-                <div class="fighter fighter-1">
-                    <img class="fighter-bust" src="https://mc-heads.net/body/${f.p1.username}" onerror="this.src='https://mc-heads.net/body/MHF_Steve'" alt="${f.p1.username}">
-                    <span class="fighter-name">${f.p1.username}</span>
-                    <div class="hp-container">${renderHearts(f.p1Hp)}</div>
-                </div>
-                <div class="fight-meta">
-                    <div class="mode-badge">${getModeIcon(f.mode)}</div>
-                    <div class="vs-text">VS</div>
-                </div>
-                <div class="fighter fighter-2">
-                    <img class="fighter-bust" src="https://mc-heads.net/body/${f.p2.username}" onerror="this.src='https://mc-heads.net/body/MHF_Steve'" alt="${f.p2.username}">
-                    <span class="fighter-name">${f.p2.username}</span>
-                    <div class="hp-container">${renderHearts(f.p2Hp)}</div>
-                </div>
-            `;
-            grid.appendChild(card);
-        }
-    });
-}
-
-function renderHearts(hp) {
-    const isFull = hp > 0;
-    const color = isFull ? (hp <= 6 ? '#FF4545' : '#FF0000') : 'rgba(255,255,255,0.1)';
-    const borderColor = isFull ? '#5D0000' : 'rgba(100,100,100,0.3)';
-    
-    return `
-        <div class="hp-indicator">
-            <div class="heart-icon-big ${hp <= 6 ? 'critical' : ''}">
-                <svg viewBox="0 0 32 32" width="24" height="24">
-                    <path d="M16,28.2 L13.7,26.1 C5.5,18.7 0,13.7 0,7.6 C0,3.3 3.3,0 7.6,0 C10.1,0 12.4,1.1 14,2.9 C15.6,1.1 17.9,0 20.4,0 C24.7,0 28,3.3 28,7.6 C28,13.7 22.5,18.7 14.3,26.1 L16,28.2 Z" 
-                          fill="${color}" stroke="${borderColor}" stroke-width="2"/>
-                </svg>
-            </div>
-            <span class="hp-number" style="color: ${color}">${Math.max(0, hp)}</span>
-            <span class="hp-max">/20</span>
-        </div>
-    `;
-}
-
-function getModeIcon(mode) {
-    switch(mode) {
-        case 'sword': return '<i data-lucide="sword"></i>';
-        case 'pot': return '<i data-lucide="flask-conical"></i>';
-        case 'axe': return '<i data-lucide="axe"></i>';
-        default: return '';
-    }
-}
-
-function openDiscord() {
-    const overlay = document.getElementById('discord-overlay');
-    const progress = document.getElementById('discord-progress');
-    overlay.classList.add('active');
-    setTimeout(() => { progress.style.width = '100%'; }, 50);
-    setTimeout(() => {
-        window.open('https://discord.gg/WTSWZ2UBF', '_blank');
-        overlay.classList.remove('active');
-        progress.style.width = '0%';
-    }, 2500);
-}
-
-function toggleView(view) {
-    const rankings = document.getElementById('rankings');
-    const arena = document.getElementById('arena-section');
-    const hero = document.getElementById('hero-section');
-    const navRankings = document.getElementById('nav-rankings');
-    const navArena = document.getElementById('nav-arena');
-
-    if (view === 'rankings') {
-        rankings.style.display = 'block';
-        arena.style.display = 'none';
-        hero.style.display = 'block';
-        navRankings.classList.add('active');
-        navArena.classList.remove('active');
-        renderLeaderboard();
-    } else {
-        rankings.style.display = 'none';
-        arena.style.display = 'block';
-        hero.style.display = 'none';
-        navRankings.classList.remove('active');
-        navArena.classList.add('active');
-        renderArena();
-    }
-}
-
-function setMode(mode, btn) {
-    currentMode = mode;
-    document.querySelectorAll('.mode-filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderLeaderboard();
-}
-
 function updateTranslations() {
-    const strings = i18n[currentLang];
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (strings[key]) el.innerHTML = strings[key];
-    });
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-        const key = el.getAttribute('data-i18n-placeholder');
-        if (strings[key]) el.placeholder = strings[key];
-    });
-    document.getElementById('lang-toggle').innerText = currentLang.toUpperCase();
-    lucide.createIcons();
+    const t = translations[currentLang];
+    document.getElementById('hero-subtitle').textContent = t.subtitle;
+    document.getElementById('search-input').placeholder = t.searchPlaceholder;
+    document.getElementById('th-pos').textContent = t.pos;
+    document.getElementById('th-player').textContent = t.player;
+    document.getElementById('th-modalities').textContent = t.modalities;
+    
+    const labels = document.querySelectorAll('.stat-label');
+    labels[0].textContent = t.topPlayer;
+    labels[1].textContent = t.activePlayers;
+    labels[2].textContent = t.totalMatches;
+    labels[3].textContent = t.avgElo;
 }
 
-function initCounters() {
-    if (playersData.length === 0) return;
-    animateValue("stat-players", 0, playersData.length, 2000);
-    animateValue("stat-matches", 0, 45200, 2500);
-    const top = playersData.reduce((prev, current) => (prev.sword > current.sword) ? prev : current);
-    document.getElementById('stat-top-player').innerText = top.username;
-}
-
-function animateValue(id, start, end, duration) {
-    const obj = document.getElementById(id);
-    let startTimestamp = null;
-    const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        const val = Math.floor(progress * (end - start) + start);
-        obj.innerHTML = val >= 1000 ? (val/1000).toFixed(1) + 'k' : val;
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        }
-    };
-    window.requestAnimationFrame(step);
-}
-
-function renderLeaderboard() {
-    const list = document.getElementById('leaderboard-list');
-    if (!list) return;
-
-    list.classList.add('transitioning');
-
-    setTimeout(() => {
-        const activeCards = new Set();
-        
-        const sorted = [...playersData].sort((a, b) => b[currentMode === 'overall' ? 'overall' : currentMode] - a[currentMode === 'overall' ? 'overall' : currentMode]);
-        const filtered = sorted.filter(p => p.username.toLowerCase().includes(currentFilter));
-        
-        const CARD_HEIGHT = 160; 
-
-        filtered.forEach((player, index) => {
-            const id = `player-${player.username}`;
-            activeCards.add(id);
-            let card = document.getElementById(id);
-            
-            if (!card) {
-                card = document.createElement('div');
-                card.id = id;
-                card.className = 'player-card fade-in';
-                list.appendChild(card);
-            }
-
-            card.style.top = (index * CARD_HEIGHT) + 'px';
-
-            const elo = currentMode === 'overall' ? player.overall : player[currentMode];
-            const changeColor = player.change >= 0 ? '#10b981' : '#ef4444';
-            const changeSign = player.change >= 0 ? '+' : '';
-
-            card.innerHTML = `
-                <div class="player-rank">#${index + 1}</div>
-                <div class="player-info">
-                    <img class="player-bust-img" src="https://mc-heads.net/body/${player.username}" onerror="this.src='https://mc-heads.net/body/MHF_Steve'" alt="${player.username}">
-                    <div class="player-name-wrap">
-                        <span class="player-name">${player.username}</span>
-                        <span class="player-modality-rank" style="color: ${changeColor}">
-                            ${getModeIcon(currentMode === 'overall' ? 'sword' : currentMode)} RANK ${index + 1}
-                        </span>
-                    </div>
-                </div>
-                <div class="player-stats">
-                    <div class="stat-group">
-                        <span class="stat-label">${currentMode.toUpperCase()} ELO</span>
-                        <span class="stat-value elo-value">${elo}</span>
-                    </div>
-                    <div class="stat-change" style="color: ${changeColor}">
-                        ${changeSign}${player.change}
-                    </div>
-                </div>
-            `;
-        });
-
-        Array.from(list.children).forEach(child => {
-            if (!activeCards.has(child.id)) {
-                child.style.opacity = '0';
-                child.style.transform = 'scale(0.9)';
-                setTimeout(() => child.remove(), 300);
-            }
-        });
-
-        list.style.height = (filtered.length * CARD_HEIGHT) + 'px';
-        list.classList.remove('transitioning');
-    }, 50);
+function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
