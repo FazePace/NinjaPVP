@@ -62,9 +62,8 @@ async function loadPlayerData() {
 
 // --- CORE LOGIC ---
 function getOverallELO(player) {
-    if (typeof player.points === 'number') return player.points;
+    if (player.points !== undefined) return player.points;
     if (!player.rankings) return 0;
-    // Suma de las modalidades principales
     const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
     return modes.reduce((acc, mode) => acc + (player.rankings[mode] || 0), 0);
 }
