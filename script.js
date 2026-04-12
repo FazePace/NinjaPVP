@@ -184,23 +184,29 @@ function renderRanking() {
 }
 
 function updateStats() {
-    if (playersData.length === 0) return;
+    if (!playersData || playersData.length === 0) {
+        document.getElementById('stat-top-player').textContent = "-";
+        document.getElementById('stat-active-players').textContent = "0";
+        document.getElementById('stat-matches').textContent = "0";
+        document.getElementById('stat-avg-elo').textContent = "0";
+        return;
+    }
 
     // Top Player
-    const top = playersData.reduce((prev, curr) => getPlayerELO(curr) > getPlayerELO(prev) ? curr : prev);
-    document.getElementById('stat-top-player').textContent = top.username;
+    const top = playersData.reduce((prev, curr) => getPlayerELO(curr) > getPlayerELO(prev) ? curr : prev, playersData[0]);
+    document.getElementById('stat-top-player').textContent = top.username || "Unknown";
     document.getElementById('stat-top-mode').textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
     // Active
     document.getElementById('stat-active-players').textContent = playersData.length;
 
-    // Total Matches (Suma real de W + L / 2)
+    // Total Matches (Real calc from rankings)
     let totalW = 0, totalL = 0;
     playersData.forEach(p => {
         if (p.rankings) {
             ['sword','pot','axe','mace','netherop','smp','uhc','vanilla'].forEach(m => {
-                totalW += (p.rankings[`${m}_w`] || 0);
-                totalL += (p.rankings[`${m}_l`] || 0);
+                totalW += (parseInt(p.rankings[`${m}_w`]) || 0);
+                totalL += (parseInt(p.rankings[`${m}_l`]) || 0);
             });
         }
     });
