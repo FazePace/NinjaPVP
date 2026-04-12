@@ -158,7 +158,7 @@ function renderRanking() {
         row.innerHTML = `
             <td class="col-rank">${rankHtml}</td>
             <td class="col-player clickable-row">
-                <div class="player-info" style="left: 0;"> <!-- Fixed positioning bug -->
+                <div class="player-info">
                     <div class="player-skin"><img src="${getSkinUrl(player)}" alt="${player.username}"></div>
                     <div class="player-details">
                         <span class="player-name">${player.username}</span>
