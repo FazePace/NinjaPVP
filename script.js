@@ -39,7 +39,7 @@ async function loadPlayerData() {
     try {
         console.log("Fetching player data...");
         // Cache busting con timestamp para evitar versiones viejas de GitHub
-        const response = await fetch('assets/players.json?t=' + Date.now());
+        const response = await fetch('./assets/players.json?t=' + Date.now());
         if (!response.ok) throw new Error("File not found");
         const data = await response.json();
         
@@ -175,7 +175,7 @@ function renderRanking() {
                     </div>
                 </div>
             </td>
-            <td class="col-modalities">${modalalitiesHtml}</td>
+            <td class="col-modalities">${modalitiesHtml}</td>
         `;
 
         row.addEventListener('click', () => showPlayerProfile(player));
