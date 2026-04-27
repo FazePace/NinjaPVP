@@ -244,21 +244,23 @@ function showPlayerProfile(player) {
         const winrateColor = winrate >= 50 ? '#4ade80' : '#f87171';
 
         modalStatsHtml += `
-            <div class="modality-stat-card">
+            <div class="modality-stat-card" data-mode="${m}">
                 <div class="modality-stat-circle">
                     <img src="./assets/${icon}" class="modality-stat-icon" alt="${m}">
                 </div>
-                <span class="modality-stat-name">${m}</span>
-                <span class="modality-stat-elo">${elo} ELO</span>
-                <span class="modality-stat-winrate" style="color:${winrateColor}">${winrate}% WR</span>
-                <div class="modality-stat-details">
-                    <div class="modality-stat-detail">
-                        <div class="modality-stat-value-small">${w}</div>
-                        <div class="modality-stat-label-small">WINS</div>
-                    </div>
-                    <div class="modality-stat-detail">
-                        <div class="modality-stat-value-small">${l}</div>
-                        <div class="modality-stat-label-small">LOSSES</div>
+                <div class="modality-stat-info">
+                    <span class="modality-stat-name">${m}</span>
+                    <span class="modality-stat-elo">${elo} ELO</span>
+                    <span class="modality-stat-winrate" style="color:${winrateColor}">${winrate}% WR</span>
+                    <div class="modality-stat-details">
+                        <div class="modality-stat-detail">
+                            <div class="modality-stat-value-small">${w}</div>
+                            <div class="modality-stat-label-small">WINS</div>
+                        </div>
+                        <div class="modality-stat-detail">
+                            <div class="modality-stat-value-small">${l}</div>
+                            <div class="modality-stat-label-small">LOSSES</div>
+                        </div>
                     </div>
                 </div>
             </div>
