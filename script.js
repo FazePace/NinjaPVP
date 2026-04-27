@@ -105,7 +105,7 @@ function getSkinUrl(player) {
 
 // --- UI RENDERING ---
 function renderRanking() {
-    const tbody = document.getElementById('ranking-body'); // FIXED ID
+    const tbody = document.getElementById('ranking-body');
     if (!tbody) return;
 
     if (playersData.length === 0) {
@@ -114,8 +114,7 @@ function renderRanking() {
     }
 
     let filtered = playersData.filter(p => p.username.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    // Sort logic for current table view
+
     filtered.sort((a, b) => {
         const bElo = getEloByMode(b, currentMode);
         const aElo = getEloByMode(a, currentMode);
@@ -124,45 +123,45 @@ function renderRanking() {
     });
 
     tbody.innerHTML = '';
-    
+
     filtered.forEach((player, index) => {
         const row = document.createElement('tr');
-        row.className = 'leaderboard-row';
-        
+
         const elo = getEloByMode(player, currentMode);
         const rank = getRank(currentMode, elo, player);
-        
-        let rankHtml = `<span class="rank-standard">#${rank}</span>`;
-        if (rank === 1) rankHtml = `<div class="rank-banner gold"><span class="rank-number">#1</span></div>`;
-        else if (rank === 2) rankHtml = `<div class="rank-banner silver"><span class="rank-number">#2</span></div>`;
-        else if (rank === 3) rankHtml = `<div class="rank-banner bronze"><span class="rank-number">#3</span></div>`;
 
-        row.className = `leaderboard-row ${rank <= 3 ? 'top-' + rank : ''}`;
+        let rankHtml = `<span class="rank-standard">#${rank}</span>`;
+        if (rank === 1) rankHtml = `<div class="rank-banner gold">#1</div>`;
+        else if (rank === 2) rankHtml = `<div class="rank-banner silver">#2</div>`;
+        else if (rank === 3) rankHtml = `<div class="rank-banner bronze">#3</div>`;
+
+        row.className = `leaderboard-row${rank <= 3 ? ' top-' + rank : ''}`;
+        // Taller rows for top 3 to accommodate bigger skins
+        row.style.height = rank <= 3 ? '140px' : '110px';
+
         const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
         const modalitiesHtml = modes.map(m => {
             const mElo = player.rankings ? (player.rankings[m] || 0) : 0;
             const mRank = getRank(m, mElo, player);
-            let icon = m === 'pot' ? 'potion.png' : m === 'smp' ? 'smp.png' : `${m}.png`;
-            const isActive = currentMode === m;
-            
+            const icon = m === 'pot' ? 'potion.png' : `${m}.png`;
+            const rankClass = mRank <= 1 ? 'top-1' : mRank <= 2 ? 'top-2' : mRank <= 3 ? 'top-3' : '';
+
             return `
-                <div class="modality-group ${isActive ? 'active' : ''}" data-modality="${m}">
-                    <div class="modality-circle" style="--modality-glow: var(--modality-glow-${m})"><img class="modality-icon" src="./assets/${icon}" alt="${m}"></div>
-                    <div class="modality-badge">
-                        <span class="modality-rank ${mRank <= 1 ? 'top-1' : mRank <= 2 ? 'top-2' : mRank <= 3 ? 'top-3' : ''}">#${mRank}</span>
-                    </div>
+                <div class="modality-group" data-modality="${m}">
+                    <img class="modality-icon" src="./assets/${icon}" alt="${m}">
+                    <span class="modality-rank ${rankClass}">#${mRank}</span>
                 </div>
             `;
         }).join('');
 
         row.innerHTML = `
             <td class="col-rank">${rankHtml}</td>
-            <td class="col-player clickable-row">
+            <td>
                 <div class="player-info">
-                    <div class="player-skin"><img src="${getSkinUrl(player)}" alt="${player.username}"></div>
+                    <div class="player-skin"><img src="${getSkinUrl(player)}" alt="${player.username}" loading="lazy"></div>
                     <div class="player-details">
                         <span class="player-name">${player.username}</span>
-                        <span class="player-elo-info"><span class="player-elo-highlight">ELO ${elo.toLocaleString()}</span> &nbsp;•&nbsp; Global Rank #${getRank('overall', getOverallELO(player), player)}</span>
+                        <span class="player-elo-info"><span class="player-elo-highlight">ELO ${elo.toLocaleString()}</span> &nbsp;•&nbsp; Global #${getRank('overall', getOverallELO(player), player)}</span>
                     </div>
                 </div>
             </td>

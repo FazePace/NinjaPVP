@@ -246,29 +246,74 @@
             color: #ffffff;
         }
 
-        /* Hero */
+        /* Hero & Animated Title */
         .hero {
             text-align: center;
-            padding: 40px 0;
+            padding: 50px 0 20px;
+            margin-bottom: 20px;
             position: relative;
         }
 
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+            animation: heroGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes heroGlow {
+            0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+            50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.1); }
+        }
+
         .title {
-            font-size: 6rem;
+            font-size: 7rem;
             font-weight: 900;
-            letter-spacing: -3px;
+            letter-spacing: -4px;
             text-transform: uppercase;
             margin-bottom: 20px;
-            background: linear-gradient(to bottom, #ffffff, #a855f7);
+            display: inline-block;
+            filter: drop-shadow(0 0 25px rgba(147, 51, 234, 0.4));
+        }
+
+        .title-letter {
+            display: inline-block;
+            background: linear-gradient(120deg,
+                #a855f7 0%, #a855f7 35%,
+                rgba(255,255,255,0.85) 50%,
+                #a855f7 65%, #a855f7 100%);
+            background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation:
+                letterDrop 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards,
+                titleShine 1.8s linear infinite;
+            opacity: 0;
+            transform: translateY(-80px);
+        }
+
+        @keyframes letterDrop {
+            0%   { transform: translateY(-80px); opacity: 0; }
+            60%  { transform: translateY(8px);   opacity: 1; }
+            100% { transform: translateY(0);     opacity: 1; }
+        }
+
+        @keyframes titleShine {
+            0%   { background-position: 100% center; }
+            100% { background-position: -100% center; }
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.75);
             max-width: 700px;
             margin: 0 auto;
+            line-height: 1.6;
         }
 
         /* Stats Block */
@@ -373,6 +418,7 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
+        /* ── Leaderboard table rows ── */
         .leaderboard-row {
             transition: background 0.3s ease;
             cursor: pointer;
@@ -382,47 +428,147 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
+        /* Top 1/2/3 row tints */
+        .leaderboard-row.top-1 { background: rgba(255, 215, 0,  0.04); }
+        .leaderboard-row.top-2 { background: rgba(192, 192, 192, 0.04); }
+        .leaderboard-row.top-3 { background: rgba(205, 127, 50, 0.04); }
+
+        /* Rank column */
+        .col-rank {
+            width: 90px;
+            vertical-align: middle;
+        }
+
+        .rank-standard {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.5);
+            padding-left: 20px;
+        }
+
+        /* Diagonal ribbon banners for #1 #2 #3 */
+        .rank-banner {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 28px 8px 20px;
+            clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #fff;
+            border-radius: 4px 0 0 4px;
+            min-width: 80px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rank-banner::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 200%; height: 100%;
+            background: linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+            animation: bannerShine 3s infinite linear;
+        }
+
+        @keyframes bannerShine {
+            0%   { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .rank-banner.gold   { background: linear-gradient(135deg, #FFD700, #FFA500); box-shadow: 0 0 18px rgba(255,215,0,0.5); }
+        .rank-banner.silver { background: linear-gradient(135deg, #D0D0D0, #A0A0A0); box-shadow: 0 0 18px rgba(200,200,200,0.4); }
+        .rank-banner.bronze { background: linear-gradient(135deg, #CD7F32, #8B4513); box-shadow: 0 0 18px rgba(205,127,50,0.4); }
+
+        /* Player cell */
         .player-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 16px;
+        }
+
+        /* Skin: use full body — natural portrait, no squish */
+        .player-skin {
+            width: 52px;
+            height: 104px;        /* 1:2 aspect = full Minecraft body proportion */
+            flex-shrink: 0;
+            display: flex;
+            align-items: flex-end;
+            overflow: visible;
         }
 
         .player-skin img {
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: bottom center;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.6));
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        .leaderboard-row:hover .player-skin img {
+            transform: scale(1.08) translateY(-4px);
+            filter: drop-shadow(0 12px 18px rgba(0,0,0,0.7)) brightness(1.1);
+        }
+
+        /* Top-3 rows get taller skins */
+        .leaderboard-row.top-1 .player-skin,
+        .leaderboard-row.top-2 .player-skin,
+        .leaderboard-row.top-3 .player-skin {
+            width: 64px;
+            height: 128px;
         }
 
         .player-name {
-            font-weight: 700;
-            font-size: 1.1rem;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #ffffff;
         }
 
         .player-elo-info {
             font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.5);
+            margin-top: 3px;
         }
 
+        .player-elo-highlight {
+            color: #FFD700;
+            font-weight: 800;
+        }
+
+        /* Modalities column */
         .col-modalities {
             display: flex;
             gap: 10px;
             justify-content: flex-end;
+            flex-wrap: wrap;
         }
 
         .modality-group {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             background: rgba(255, 255, 255, 0.05);
-            padding: 5px 10px;
-            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 6px 12px;
+            border-radius: 12px;
             font-size: 0.8rem;
+            transition: all 0.2s ease;
         }
 
+        .modality-group:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        .modality-rank.top-1 { color: #FFD700; font-weight: 900; }
+        .modality-rank.top-2 { color: #C0C0C0; font-weight: 900; }
+        .modality-rank.top-3 { color: #CD7F32; font-weight: 900; }
+        .modality-rank       { color: rgba(255,255,255,0.8); font-weight: 700; }
+
         .modality-icon {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
         }
 
         /* Live Fights Standing View */
@@ -725,7 +871,7 @@
         <!-- LEADERBOARD VIEW -->
         <div id="leaderboard-view">
             <section class="hero">
-                <h1 class="title" id="title">NinjaPVP</h1>
+                <h1 class="title" id="title"></h1>
                 <p class="subtitle" id="hero-subtitle">The most competitive PvP server, featuring a fully custom and exclusive ELO ranking system.</p>
             </section>
 
@@ -950,19 +1096,18 @@
             else island.classList.remove('scrolled');
         });
 
-        // Initialize Title Animation
+        // Initialize Title Animation — letter-drop with purple shine
         function createAnimatedTitle() {
-            const titleElement = document.getElementById('title');
-            if (!titleElement) return;
-            const text = titleElement.textContent;
-            titleElement.innerHTML = '';
+            const el = document.getElementById('title');
+            if (!el) return;
+            const text = 'NinjaPVP';
+            el.innerHTML = '';
             text.split('').forEach((letter, i) => {
                 const span = document.createElement('span');
                 span.textContent = letter;
-                span.style.animation = `fadeIn 0.5s ease forwards ${i * 0.1}s`;
-                span.style.opacity = '0';
-                span.style.display = 'inline-block';
-                titleElement.appendChild(span);
+                span.className = 'title-letter';
+                span.style.animationDelay = `${i * 0.09}s`;
+                el.appendChild(span);
             });
         }
         createAnimatedTitle();
