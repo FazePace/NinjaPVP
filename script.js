@@ -216,23 +216,23 @@ function showPlayerProfile(player) {
     const modal = document.getElementById('player-modal');
     if (!modal) return;
 
-    // Header Info
+    // Header Info — use FULL BODY skin, not avatar
     const modalSkin = document.getElementById('modal-player-skin');
-    if (modalSkin) modalSkin.src = getSkinUrl(player).replace('/body/', '/avatar/');
-    
+    if (modalSkin) modalSkin.src = getSkinUrl(player); // full body
+
     const modalName = document.getElementById('modal-player-name');
     if (modalName) modalName.textContent = player.username.toUpperCase();
-    
+
     const modalElo = document.getElementById('modal-player-elo');
     if (modalElo) modalElo.textContent = `ELO: ${getOverallELO(player)}`;
-    
+
     const modalRank = document.getElementById('modal-player-global-rank');
     if (modalRank) modalRank.textContent = `Global Rank: #${getRank('overall', getOverallELO(player), player)}`;
 
-    // Top Stats Calculation
+    // Per-mode stats
     let totalW = 0, totalL = 0;
     const modes = ['sword', 'pot', 'axe', 'mace', 'netherop', 'smp', 'uhc', 'vanilla'];
-    
+
     let modalStatsHtml = '';
     modes.forEach(m => {
         const elo = player.rankings ? (player.rankings[m] || 0) : 0;
@@ -240,17 +240,17 @@ function showPlayerProfile(player) {
         const l = player.rankings ? (player.rankings[`${m}_l`] || 0) : 0;
         totalW += w; totalL += l;
         const winrate = getWinrate(w, l);
-        
-        let icon = m === 'pot' ? 'potion.png' : m === 'smp' ? 'smp.png' : `${m}.png`;
+        const icon = m === 'pot' ? 'potion.png' : `${m}.png`;
+        const winrateColor = winrate >= 50 ? '#4ade80' : '#f87171';
 
         modalStatsHtml += `
             <div class="modality-stat-card">
-                <div class="modality-stat-header">
-                    <span class="modality-stat-name">${m}</span>
-                    <img src="./assets/${icon}" class="modality-stat-icon">
+                <div class="modality-stat-circle">
+                    <img src="./assets/${icon}" class="modality-stat-icon" alt="${m}">
                 </div>
-                <div class="modality-stat-elo">${elo} ELO</div>
-                <div class="modality-stat-winrate" style="color: ${winrate >= 50 ? '#4ade80' : '#f87171'}">${winrate}% Winrate</div>
+                <span class="modality-stat-name">${m}</span>
+                <span class="modality-stat-elo">${elo} ELO</span>
+                <span class="modality-stat-winrate" style="color:${winrateColor}">${winrate}% WR</span>
                 <div class="modality-stat-details">
                     <div class="modality-stat-detail">
                         <div class="modality-stat-value-small">${w}</div>
