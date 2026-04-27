@@ -1077,12 +1077,18 @@
         .modality-stat-card[data-mode="uhc"]     { --mc: 239,68,68; }
         .modality-stat-card[data-mode="vanilla"] { --mc: 217,119,156; }
 
+        /* Card entrance animation */
+        @keyframes cardEntrance {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
         /* Each card: vertical layout, centered, compact */
         .modality-stat-card {
             background: rgba(var(--mc),0.05);
             border: 1px solid rgba(var(--mc),0.2);
             border-radius: 16px;
-            padding: 16px 12px;
+            padding: 18px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1090,27 +1096,45 @@
             transition: all 0.25s ease;
             backdrop-filter: blur(12px);
             box-shadow: 0 0 0 1px rgba(var(--mc),0.05), inset 0 1px 0 rgba(255,255,255,0.06);
+            animation: cardEntrance 0.4s ease both;
         }
+
+        /* Stagger delay by position */
+        .modality-stat-card:nth-child(1) { animation-delay: 0.05s; }
+        .modality-stat-card:nth-child(2) { animation-delay: 0.10s; }
+        .modality-stat-card:nth-child(3) { animation-delay: 0.15s; }
+        .modality-stat-card:nth-child(4) { animation-delay: 0.20s; }
+        .modality-stat-card:nth-child(5) { animation-delay: 0.25s; }
+        .modality-stat-card:nth-child(6) { animation-delay: 0.30s; }
+        .modality-stat-card:nth-child(7) { animation-delay: 0.35s; }
+        .modality-stat-card:nth-child(8) { animation-delay: 0.40s; }
 
         .modality-stat-card:hover {
             background: rgba(var(--mc),0.12);
             border-color: rgba(var(--mc),0.45);
-            box-shadow: 0 0 20px rgba(var(--mc),0.25), inset 0 1px 0 rgba(255,255,255,0.1);
-            transform: translateY(-3px);
+            box-shadow: 0 0 22px rgba(var(--mc),0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+            transform: translateY(-4px) scale(1.02);
         }
 
-        /* Circular icon — centered at top */
+        /* Circular icon — bigger, prominent */
         .modality-stat-circle {
-            width: 52px; height: 52px;
+            width: 64px; height: 64px;
             border-radius: 50%; flex-shrink: 0;
             background: rgba(var(--mc),0.15);
             border: 1px solid rgba(var(--mc),0.4);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 14px rgba(var(--mc),0.3), inset 0 1px 0 rgba(255,255,255,0.12);
+            box-shadow: 0 0 18px rgba(var(--mc),0.35), inset 0 1px 0 rgba(255,255,255,0.14);
+            animation: iconFloat 4s ease-in-out infinite;
         }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-4px); }
+        }
+
         .modality-stat-icon {
-            width: 32px; height: 32px; object-fit: contain;
-            filter: brightness(1.6) drop-shadow(0 0 4px rgba(var(--mc),0.5));
+            width: 40px; height: 40px; object-fit: contain;
+            filter: brightness(1.7) drop-shadow(0 0 6px rgba(var(--mc),0.6));
         }
 
         /* Text block — centered, compact */
@@ -1490,7 +1514,56 @@
                     </div>`;
                 }).join('');
             } catch (e) {
-                fightsList.innerHTML = `<div class="no-fights-msg">${currentLang === 'en' ? 'Connecting to server...' : 'Conectando al servidor...'}</div>`;
+                // API offline — show demo fights so the UI can be previewed
+                const demoFights = [
+                    {
+                        p1: 'NOT_VOIDD',    p1Elo: 1240, p1Health: 16,
+                        p2: 'Aris_el_babas', p2Elo: 980,  p2Health: 9,
+                        mode: 'SWORD',      world: 'Arena-1'
+                    },
+                    {
+                        p1: 'xX_Ninja_Xx',  p1Elo: 860, p1Health: 18,
+                        p2: 'Shadow_GG',    p2Elo: 775, p2Health: 4,
+                        mode: 'POT',        world: 'Arena-2'
+                    }
+                ];
+
+                fightsList.innerHTML = demoFights.map(f => {
+                    const p1hp = Math.round((f.p1Health / 20) * 100);
+                    const p2hp = Math.round((f.p2Health / 20) * 100);
+                    return `
+                    <div class="live-fight-card">
+                        <div class="fight-arena-info">
+                            <span class="arena-mode">${f.mode}</span>
+                            <span style="font-size:0.7rem;color:rgba(255,255,255,0.3);">${f.world} &bull; DEMO</span>
+                        </div>
+                        <div class="fight-combatants">
+                            <div class="fighter">
+                                <div class="fighter-skin-container">
+                                    <img src="https://mc-heads.net/body/${f.p1}/200" alt="${f.p1}">
+                                </div>
+                                <span class="fighter-name">${f.p1}</span>
+                                <span class="fighter-elo">${f.p1Elo} ELO</span>
+                                <div class="health-wrapper">
+                                    <div class="health-bar-container"><div class="health-fill" style="width:${p1hp}%;"></div></div>
+                                    <span class="health-text">${f.p1Health} ♥</span>
+                                </div>
+                            </div>
+                            <div class="fight-vs">VS</div>
+                            <div class="fighter">
+                                <div class="fighter-skin-container">
+                                    <img src="https://mc-heads.net/body/${f.p2}/200" alt="${f.p2}" style="transform:scaleX(-1);">
+                                </div>
+                                <span class="fighter-name">${f.p2}</span>
+                                <span class="fighter-elo">${f.p2Elo} ELO</span>
+                                <div class="health-wrapper">
+                                    <div class="health-bar-container"><div class="health-fill" style="width:${p2hp}%;"></div></div>
+                                    <span class="health-text">${f.p2Health} ♥</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
             }
         }
 
