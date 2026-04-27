@@ -1024,10 +1024,10 @@
         .modal-stat-value { font-size: 1.8rem; font-weight: 900; color: #fff; line-height: 1; }
         .modal-stat-label { font-size: 0.65rem; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Modality grid — rows with mode color accent */
+        /* Modality grid — 2 clean columns */
         .modal-modality-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
         }
 
@@ -1053,6 +1053,7 @@
             gap: 14px;
             transition: all 0.25s ease;
             backdrop-filter: blur(10px);
+            min-width: 0;          /* prevents flex overflow */
         }
 
         .modality-stat-card:hover {
@@ -1062,35 +1063,38 @@
             transform: translateX(3px);
         }
 
-        /* Circular icon — smaller, not dominant */
+        /* Icon circle */
         .modality-stat-circle {
-            width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
-            background: rgba(var(--mc),0.12);
-            border: 1px solid rgba(var(--mc),0.3);
+            width: 56px; height: 56px;
+            border-radius: 50%; flex-shrink: 0;
+            background: rgba(var(--mc),0.14);
+            border: 1px solid rgba(var(--mc),0.35);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 10px rgba(var(--mc),0.2);
+            box-shadow: 0 0 12px rgba(var(--mc),0.25);
         }
         .modality-stat-icon {
-            width: 30px; height: 30px; object-fit: contain;
-            filter: brightness(1.5);
+            width: 34px; height: 34px; object-fit: contain;
+            filter: brightness(1.6);
         }
 
-        /* Text block */
+        /* Text block — flex column, clips cleanly */
         .modality-stat-info {
-            display: flex; flex-direction: column; gap: 3px; flex: 1;
+            display: flex; flex-direction: column; gap: 2px;
+            flex: 1; min-width: 0;
         }
         .modality-stat-name {
             font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.8px; color: rgba(var(--mc),0.9);
+            letter-spacing: 0.8px; color: rgba(var(--mc),0.95);
+            white-space: nowrap;
         }
-        .modality-stat-elo  { font-size: 1rem; font-weight: 900; color: #fff; }
+        .modality-stat-elo  { font-size: 1rem; font-weight: 900; color: #fff; line-height: 1.2; }
         .modality-stat-winrate { font-size: 0.75rem; font-weight: 700; }
         .modality-stat-details {
-            display: flex; gap: 10px; margin-top: 2px;
+            display: flex; gap: 12px; margin-top: 3px;
         }
-        .modality-stat-detail { text-align: center; }
-        .modality-stat-value-small { font-size: 0.85rem; font-weight: 800; color: rgba(255,255,255,0.8); }
-        .modality-stat-label-small { font-size: 0.58rem; color: rgba(255,255,255,0.35); text-transform: uppercase; }
+        .modality-stat-detail { text-align: left; }
+        .modality-stat-value-small { font-size: 0.82rem; font-weight: 800; color: rgba(255,255,255,0.85); display: block; }
+        .modality-stat-label-small { font-size: 0.58rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.5px; display: block; }
 
         @media (max-width: 768px) {
             .title { font-size: 3rem; }
