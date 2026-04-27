@@ -148,8 +148,12 @@ function renderRanking() {
 
             return `
                 <div class="modality-group" data-modality="${m}">
-                    <img class="modality-icon" src="./assets/${icon}" alt="${m}">
-                    <span class="modality-rank ${rankClass}">#${mRank}</span>
+                    <div class="modality-circle-wrap">
+                        <img class="modality-icon" src="./assets/${icon}" alt="${m}">
+                    </div>
+                    <div class="modality-badge-chip">
+                        <span class="modality-rank ${rankClass}">#${mRank}</span>
+                    </div>
                 </div>
             `;
         }).join('');
