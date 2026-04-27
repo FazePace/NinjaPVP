@@ -1116,25 +1116,25 @@
             transform: translateY(-4px) scale(1.02);
         }
 
-        /* Circular icon — bigger, prominent */
+        /* Circular icon — large and prominent */
         .modality-stat-circle {
-            width: 64px; height: 64px;
+            width: 110px; height: 110px;
             border-radius: 50%; flex-shrink: 0;
             background: rgba(var(--mc),0.15);
-            border: 1px solid rgba(var(--mc),0.4);
+            border: 1.5px solid rgba(var(--mc),0.45);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 18px rgba(var(--mc),0.35), inset 0 1px 0 rgba(255,255,255,0.14);
+            box-shadow: 0 0 32px rgba(var(--mc),0.4), inset 0 1px 0 rgba(255,255,255,0.16);
             animation: iconFloat 4s ease-in-out infinite;
         }
 
         @keyframes iconFloat {
             0%, 100% { transform: translateY(0px); }
-            50%       { transform: translateY(-4px); }
+            50%       { transform: translateY(-6px); }
         }
 
         .modality-stat-icon {
-            width: 40px; height: 40px; object-fit: contain;
-            filter: brightness(1.7) drop-shadow(0 0 6px rgba(var(--mc),0.6));
+            width: 64px; height: 64px; object-fit: contain;
+            filter: brightness(1.8) drop-shadow(0 0 10px rgba(var(--mc),0.65));
         }
 
         /* Text block — centered, compact */
@@ -1197,19 +1197,7 @@
             transform: translateX(3px);
         }
 
-        /* Icon circle */
-        .modality-stat-circle {
-            width: 56px; height: 56px;
-            border-radius: 50%; flex-shrink: 0;
-            background: rgba(var(--mc),0.14);
-            border: 1px solid rgba(var(--mc),0.35);
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 12px rgba(var(--mc),0.25);
-        }
-        .modality-stat-icon {
-            width: 34px; height: 34px; object-fit: contain;
-            filter: brightness(1.6);
-        }
+        /* (duplicate removed — sizes now set above at 90px/56px) */
 
         /* Text block — flex column, clips cleanly */
         .modality-stat-info {
@@ -1229,6 +1217,46 @@
         .modality-stat-detail { text-align: left; }
         .modality-stat-value-small { font-size: 0.82rem; font-weight: 800; color: rgba(255,255,255,0.85); display: block; }
         .modality-stat-label-small { font-size: 0.58rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.5px; display: block; }
+
+        /* ── Live fight entrance & damage animations ── */
+        @keyframes fightEntrance {
+            from { opacity: 0; transform: translateY(28px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .fight-entrance {
+            animation: fightEntrance 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        .fight-entrance:nth-child(2) { animation-delay: 0.12s; }
+
+        @keyframes damageShake {
+            0%   { transform: translateX(0)    brightness(1); }
+            15%  { transform: translateX(-6px); filter: brightness(2) drop-shadow(0 0 12px #ff4444); }
+            30%  { transform: translateX(6px); }
+            45%  { transform: translateX(-4px); }
+            60%  { transform: translateX(4px); }
+            75%  { transform: translateX(-2px); }
+            100% { transform: translateX(0); filter: brightness(1); }
+        }
+        .damage-hit { animation: damageShake 0.45s ease both; }
+
+        .damage-number {
+            position: absolute;
+            top: 10px; left: 50%;
+            transform: translateX(-50%);
+            color: #ff4444;
+            font-size: 1.6rem; font-weight: 900;
+            pointer-events: none;
+            text-shadow: 0 0 12px rgba(255,68,68,0.9), 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 50;
+            animation: dmgFloat 0.9s ease forwards;
+        }
+        @keyframes dmgFloat {
+            0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-55px); }
+        }
+
+        /* Health bar smooth transition */
+        .health-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
 
         @media (max-width: 768px) {
             .title { font-size: 3rem; }
@@ -1455,9 +1483,24 @@
             }
         }
 
-        // Live Fights Rendering
+        // Live Fights Rendering & Simulation
         const fightsList = document.getElementById('fights-list');
         const liveFightsTitle = document.getElementById('live-fights-title');
+        let demoFights = null; // Persist demo state
+        let isOnline = false;
+
+        function triggerDamageEffect(fighterEl, damage) {
+            fighterEl.classList.remove('damage-hit');
+            void fighterEl.offsetWidth; // trigger reflow
+            fighterEl.classList.add('damage-hit');
+            
+            // Create floating damage number
+            const dmgNum = document.createElement('div');
+            dmgNum.className = 'damage-number';
+            dmgNum.textContent = `-${damage}`;
+            fighterEl.appendChild(dmgNum);
+            setTimeout(() => dmgNum.remove(), 900);
+        }
 
         async function updateLiveFights() {
             if (document.getElementById('live-view').style.display === 'none') return;
@@ -1466,6 +1509,8 @@
                 const response = await fetch('http://ninjapvp.tarohosting.com:8080/live');
                 if (!response.ok) throw new Error('Offline');
                 const fights = await response.json();
+                isOnline = true;
+                demoFights = null; // clear demo if online
                 
                 liveFightsTitle.textContent = currentLang === 'en' ? 'LIVE FIGHTS' : 'PELEAS EN VIVO';
                 
@@ -1475,38 +1520,35 @@
                 }
                 
                 fightsList.innerHTML = fights.map(f => {
-                    const p1HealthPercent = Math.max(0, Math.min(100, (f.p1Health / 20.0) * 100));
-                    const p2HealthPercent = Math.max(0, Math.min(100, (f.p2Health / 20.0) * 100));
-                    
+                    const p1hp = Math.max(0, Math.min(100, (f.p1Health / 20.0) * 100));
+                    const p2hp = Math.max(0, Math.min(100, (f.p2Health / 20.0) * 100));
                     return `
-                    <div class="live-fight-card">
+                    <div class="live-fight-card fight-entrance">
                         <div class="fight-arena-info">
                             <span class="arena-mode">${f.mode}</span>
                             <span style="font-size: 0.7rem; color: rgba(255,255,255,0.3);">${f.world}</span>
                         </div>
                         <div class="fight-combatants">
-                            <div class="fighter">
+                            <div class="fighter" id="f-${f.p1}">
                                 <div class="fighter-skin-container">
                                     <img src="https://mc-heads.net/body/${f.p1}/200" alt="${f.p1}">
                                 </div>
                                 <span class="fighter-name">${f.p1}</span>
                                 <span class="fighter-elo">${f.p1Elo} ELO</span>
                                 <div class="health-wrapper">
-                                    <div class="health-bar-container"><div class="health-fill" style="width: ${p1HealthPercent}%;"></div></div>
+                                    <div class="health-bar-container"><div class="health-fill" style="width: ${p1hp}%;"></div></div>
                                     <span class="health-text">${f.p1Health} ♥</span>
                                 </div>
                             </div>
-                            
                             <div class="fight-vs">VS</div>
-                            
-                            <div class="fighter">
+                            <div class="fighter" id="f-${f.p2}">
                                 <div class="fighter-skin-container">
                                     <img src="https://mc-heads.net/body/${f.p2}/200" alt="${f.p2}" style="transform: scaleX(-1);">
                                 </div>
                                 <span class="fighter-name">${f.p2}</span>
                                 <span class="fighter-elo">${f.p2Elo} ELO</span>
                                 <div class="health-wrapper">
-                                    <div class="health-bar-container"><div class="health-fill" style="width: ${p2HealthPercent}%;"></div></div>
+                                    <div class="health-bar-container"><div class="health-fill" style="width: ${p2hp}%;"></div></div>
                                     <span class="health-text">${f.p2Health} ♥</span>
                                 </div>
                             </div>
@@ -1514,60 +1556,108 @@
                     </div>`;
                 }).join('');
             } catch (e) {
-                // API offline — show demo fights so the UI can be previewed
-                const demoFights = [
-                    {
-                        p1: 'NOT_VOIDD',    p1Elo: 1240, p1Health: 16,
-                        p2: 'Aris_el_babas', p2Elo: 980,  p2Health: 9,
-                        mode: 'SWORD',      world: 'Arena-1'
-                    },
-                    {
-                        p1: 'xX_Ninja_Xx',  p1Elo: 860, p1Health: 18,
-                        p2: 'Shadow_GG',    p2Elo: 775, p2Health: 4,
-                        mode: 'POT',        world: 'Arena-2'
-                    }
-                ];
-
-                fightsList.innerHTML = demoFights.map(f => {
-                    const p1hp = Math.round((f.p1Health / 20) * 100);
-                    const p2hp = Math.round((f.p2Health / 20) * 100);
-                    return `
-                    <div class="live-fight-card">
-                        <div class="fight-arena-info">
-                            <span class="arena-mode">${f.mode}</span>
-                            <span style="font-size:0.7rem;color:rgba(255,255,255,0.3);">${f.world} &bull; DEMO</span>
-                        </div>
-                        <div class="fight-combatants">
-                            <div class="fighter">
-                                <div class="fighter-skin-container">
-                                    <img src="https://mc-heads.net/body/${f.p1}/200" alt="${f.p1}">
-                                </div>
-                                <span class="fighter-name">${f.p1}</span>
-                                <span class="fighter-elo">${f.p1Elo} ELO</span>
-                                <div class="health-wrapper">
-                                    <div class="health-bar-container"><div class="health-fill" style="width:${p1hp}%;"></div></div>
-                                    <span class="health-text">${f.p1Health} ♥</span>
-                                </div>
-                            </div>
-                            <div class="fight-vs">VS</div>
-                            <div class="fighter">
-                                <div class="fighter-skin-container">
-                                    <img src="https://mc-heads.net/body/${f.p2}/200" alt="${f.p2}" style="transform:scaleX(-1);">
-                                </div>
-                                <span class="fighter-name">${f.p2}</span>
-                                <span class="fighter-elo">${f.p2Elo} ELO</span>
-                                <div class="health-wrapper">
-                                    <div class="health-bar-container"><div class="health-fill" style="width:${p2hp}%;"></div></div>
-                                    <span class="health-text">${f.p2Health} ♥</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
+                isOnline = false;
+                // If we don't have demo data yet, initialize it
+                if (!demoFights) {
+                    demoFights = [
+                        { id: 1, p1: 'NOT_VOIDD', p1Elo: 1240, p1h: 20, p2: 'Aris_el_babas', p2Elo: 980, p2h: 20, mode: 'SWORD', world: 'Arena-1' },
+                        { id: 2, p1: 'xX_Ninja_Xx', p1Elo: 860, p1h: 20, p2: 'Shadow_GG', p2Elo: 775, p2h: 20, mode: 'POT', world: 'Arena-2' }
+                    ];
+                    renderDemoFights();
+                }
+                simulateCombat();
             }
         }
 
-        setInterval(updateLiveFights, 3000);
+        function renderDemoFights() {
+            fightsList.innerHTML = demoFights.map(f => {
+                const p1hp = (f.p1h / 20) * 100;
+                const p2hp = (f.p2h / 20) * 100;
+                return `
+                <div class="live-fight-card fight-entrance" id="fight-${f.id}">
+                    <div class="fight-arena-info">
+                        <span class="arena-mode">${f.mode}</span>
+                        <span style="font-size:0.7rem;color:rgba(255,255,255,0.3);">${f.world} &bull; DEMO</span>
+                    </div>
+                    <div class="fight-combatants">
+                        <div class="fighter p1-side">
+                            <div class="fighter-skin-container"><img src="https://mc-heads.net/body/${f.p1}/200" alt="${f.p1}"></div>
+                            <span class="fighter-name">${f.p1}</span>
+                            <span class="fighter-elo">${f.p1Elo} ELO</span>
+                            <div class="health-wrapper">
+                                <div class="health-bar-container"><div class="health-fill" style="width:${p1hp}%;"></div></div>
+                                <span class="health-text">${f.p1h} ♥</span>
+                            </div>
+                        </div>
+                        <div class="fight-vs">VS</div>
+                        <div class="fighter p2-side">
+                            <div class="fighter-skin-container"><img src="https://mc-heads.net/body/${f.p2}/200" alt="${f.p2}" style="transform:scaleX(-1);"></div>
+                            <span class="fighter-name">${f.p2}</span>
+                            <span class="fighter-elo">${f.p2Elo} ELO</span>
+                            <div class="health-wrapper">
+                                <div class="health-bar-container"><div class="health-fill" style="width:${p2hp}%;"></div></div>
+                                <span class="health-text">${f.p2h} ♥</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function simulateCombat() {
+            if (!demoFights) return;
+            demoFights.forEach(f => {
+                if (f.p1h <= 0 || f.p2h <= 0) {
+                    // One player died, reset fight after a short delay
+                    if (!f.resetting) {
+                        f.resetting = true;
+                        setTimeout(() => {
+                            f.p1h = 20; f.p2h = 20; f.resetting = false;
+                            const card = document.getElementById(`fight-${f.id}`);
+                            if (card) {
+                                card.classList.remove('fight-entrance');
+                                void card.offsetWidth;
+                                card.classList.add('fight-entrance');
+                                updateFighterUI(f, 1); updateFighterUI(f, 2);
+                            }
+                        }, 2500);
+                    }
+                    return;
+                }
+
+                // Randomly pick a victim
+                if (Math.random() > 0.65) {
+                    const victim = Math.random() > 0.5 ? 1 : 2;
+                    const damage = Math.floor(Math.random() * 2) + 1; // 1 or 2 hearts
+                    if (victim === 1) f.p1h = Math.max(0, f.p1h - damage);
+                    else f.p2h = Math.max(0, f.p2h - damage);
+
+                    updateFighterUI(f, victim, damage);
+                }
+            });
+        }
+
+        function updateFighterUI(fight, victimIdx, damage = 0) {
+            const card = document.getElementById(`fight-${fight.id}`);
+            if (!card) return;
+            const fighterEl = card.querySelector(victimIdx === 1 ? '.p1-side' : '.p2-side');
+            if (!fighterEl) return;
+            
+            const health = victimIdx === 1 ? fight.p1h : fight.p2h;
+            const healthFill = fighterEl.querySelector('.health-fill');
+            const healthText = fighterEl.querySelector('.health-text');
+            
+            if (healthFill) healthFill.style.width = `${(health / 20) * 100}%`;
+            if (healthText) healthText.textContent = `${health} ♥`;
+            
+            if (damage > 0) triggerDamageEffect(fighterEl, damage);
+        }
+
+        setInterval(() => {
+            if (!isOnline) simulateCombat();
+        }, 1200);
+
+        setInterval(updateLiveFights, 5000);
 
         // Dynamic Island scroll effect
         window.addEventListener('scroll', () => {
